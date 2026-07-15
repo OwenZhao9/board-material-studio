@@ -811,3 +811,14 @@ VIDEO_PROVIDERS.sora = {
     return { status: 'running' };
   },
 };
+
+// ============================================================
+// 平台白名单：仅保留 Google（Gemini 生图 / Veo 生视频）+ 演示模式
+// 如需恢复其他平台，删掉下面这段即可。
+// ============================================================
+(function keepOnlyGoogle() {
+  const KEEP_IMG = ['mock', 'gemini'];
+  const KEEP_VID = ['mock', 'veo'];
+  for (const k of Object.keys(IMAGE_PROVIDERS)) if (!KEEP_IMG.includes(k)) delete IMAGE_PROVIDERS[k];
+  for (const k of Object.keys(VIDEO_PROVIDERS)) if (!KEEP_VID.includes(k)) delete VIDEO_PROVIDERS[k];
+})();

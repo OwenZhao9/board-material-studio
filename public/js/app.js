@@ -1125,6 +1125,13 @@ async function checkHealth() {
 
 // ---------- 启动 ----------
 function init() {
+  // 若缓存里存的平台已被移除（如只保留Google后），回退到当前可用的平台
+  if (!IMAGE_PROVIDERS[state.settings.imgProvider]) {
+    state.settings.imgProvider = IMAGE_PROVIDERS.gemini ? 'gemini' : Object.keys(IMAGE_PROVIDERS)[0];
+  }
+  if (!VIDEO_PROVIDERS[state.settings.vidProvider]) {
+    state.settings.vidProvider = VIDEO_PROVIDERS.veo ? 'veo' : Object.keys(VIDEO_PROVIDERS)[0];
+  }
   renderTextures();
   renderLogo();
   renderComboInstr();
