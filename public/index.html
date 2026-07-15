@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>板材宣传素材工坊</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand-block">
+      <div class="logo-mark">板</div>
+      <div>
+        <h1>板材宣传素材工坊</h1>
+        <p class="sub">花色上样 · 九宫格宣传图 · 质感视频，一键批量生成</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="server-status" class="status-dot" title="本地服务状态">● 服务检测中…</span>
+      <button class="btn ghost" id="btn-open-output">打开输出文件夹</button>
+    </div>
+  </div>
+</header>
+
+<nav class="steps">
+  <button class="step active" data-step="textures"><i>①</i> 花色素材</button>
+  <button class="step" data-step="prompts"><i>②</i> 场景与提示词</button>
+  <button class="step" data-step="platforms"><i>③</i> 平台与密钥</button>
+  <button class="step" data-step="generate"><i>④</i> 批量生成图片</button>
+  <button class="step" data-step="video"><i>⑤</i> 视频与成片</button>
+</nav>
+
+<main>
+
+<!-- ① 花色素材 -->
+<section id="sec-textures" class="panel active">
+  <div class="panel-head">
+    <h2>上传板材花色照片</h2>
+    <p>拍摄的板材/花色照片直接拖进来，可多选。建议正面平拍、光线均匀、纹理清晰。给每个花色填写「编号 + 名称」，会用于文件命名、水印标签和成片标注。</p>
+  </div>
+
+  <div id="tex-drop" class="dropzone">
+    <div class="dz-icon">🪵</div>
+    <div class="dz-text">点击选择 或 拖拽花色照片到这里（可多张）</div>
+    <input type="file" id="tex-input" accept="image/*" multiple hidden />
+  </div>
+
+  <div id="tex-list" class="tex-grid"></div>
+
+  <div class="card brand-card">
+    <h3>品牌与水印信息 <span class="hint">（用于导出图片时叠加水印，可留空）</span></h3>
+    <div class="form-row">
+      <label>品牌名称
+        <input type="text" id="brand-name" placeholder="例如：福人 FUREN" />
+      </label>
+      <label>小红书号
+        <input type="text" id="brand-xhs" placeholder="例如：27769468011" />
+      </label>
+      <label>品牌 Logo（可选，透明PNG最佳）
+        <div class="logo-upload">
+          <input type="file" id="brand-logo-input" accept="image/*" hidden />
+          <button class="btn small" id="btn-logo-pick">选择Logo</button>
+          <img id="brand-logo-preview" class="logo-preview" hidden />
+          <button class="btn small ghost" id="btn-logo-clear" hidden>清除</button>
+        </div>
+      </label>
+    </div>
+  </div>
+</section>
+
+<!-- ② 场景与提示词 -->
+<section id="sec-prompts" class="panel">
+  <div class="panel-head">
+    <h2>场景九宫格与提示词</h2>
+    <p>默认提供 9 个场景，每个花色会按勾选的场景各生成一张图，凑成小红书/朋友圈九宫格。提示词可以直接改，改坏了点「恢复默认」即可。</p>
+    <div class="head-actions">
+      <button class="btn small" id="btn-scene-all">全选</button>
+      <button class="btn small ghost" id="btn-scene-none">全不选</button>
+      <button class="btn small ghost" id="btn-scene-reset-all">全部恢复默认</button>
+      <button class="btn small" id="btn-scene-add">＋ 添加自定义场景</button>
+    </div>
+  </div>
+
+  <div id="scene-list" class="scene-grid"></div>
+
+  <div class="card">
+    <h3>视频运镜提示词 <span class="hint">（生成视频时使用）</span>
+      <button class="btn small ghost right" id="btn-video-prompt-reset">恢复默认</button>
+    </h3>
+    <textarea id="video-prompt" rows="3"></textarea>
+  </div>
+
+  <div class="card">
+    <h3>负面提示词 <span class="hint">（告诉模型不要出现什么，部分平台支持）</span>
+      <button class="btn small ghost right" id="btn-negative-reset">恢复默认</button>
+    </h3>
+    <textarea id="negative-prompt" rows="2"></textarea>
+  </div>
+
+  <div class="card">
+    <h3>全局风格后缀 <span class="hint">（追加到每个场景提示词末尾，如统一色调要求，可留空）</span></h3>
+    <textarea id="style-suffix" rows="2" placeholder="例如：整体奶油色暖调，与参考花色协调"></textarea>
+  </div>
+
+  <div class="card">
+    <h3>多花色组合搭配指令 <span class="hint">（第④步选择2-4种组合时，自动加在场景提示词前；先选中的花色=图1=主花色）</span></h3>
+    <div id="combo-instr-wrap"></div>
+  </div>
+</section>
+
+<!-- ③ 平台与密钥 -->
+<section id="sec-platforms" class="panel">
+  <div class="panel-head">
+    <h2>生成平台与 API Key</h2>
+    <p>选择用哪家平台生图/生视频，填入对应 API Key 即可（Key 只保存在你自己电脑的浏览器里，请求经本机转发，不会上传给任何第三方）。支持填写中转/代理地址。先用「演示模式」可以不花钱跑通全流程。</p>
+  </div>
+
+  <h3 class="group-title">🎨 生图平台（把花色贴到场景里）</h3>
+  <div id="img-provider-list" class="provider-list"></div>
+
+  <h3 class="group-title">🎬 生视频平台（图生视频运镜）</h3>
+  <div id="vid-provider-list" class="provider-list"></div>
+
+  <div class="card">
+    <h3>生成参数</h3>
+    <div class="form-row">
+      <label>图片比例
+        <select id="img-ratio">
+          <option value="3:4" selected>3:4（小红书推荐）</option>
+          <option value="1:1">1:1 方形</option>
+          <option value="4:3">4:3 横向</option>
+          <option value="16:9">16:9 宽幅</option>
+          <option value="9:16">9:16 竖屏</option>
+        </select>
+      </label>
+      <label>视频时长
+        <select id="vid-duration">
+          <option value="5" selected>5 秒</option>
+          <option value="10">10 秒</option>
+        </select>
+      </label>
+      <label>并发数（同时进行的任务）
+        <select id="concurrency">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+      </label>
+      <label>失败自动重试
+        <select id="retries">
+          <option value="0">不重试</option>
+          <option value="1" selected>1 次</option>
+          <option value="2">2 次</option>
+        </select>
+      </label>
+    </div>
+  </div>
+</section>
+
+<!-- ④ 批量生成图片 -->
+<section id="sec-generate" class="panel">
+  <div class="panel-head">
+    <h2>批量生成九宫格宣传图</h2>
+    <p>勾选要生成的花色，点开始。每个花色 × 每个勾选场景 = 一张图，自动按花色分组保存到输出文件夹。</p>
+  </div>
+
+  <div class="card gen-control">
+    <div class="form-row" style="max-width:420px">
+      <label>每张图使用花色数量
+        <select id="combo-count">
+          <option value="1" selected>1 种（每个花色独立出图）</option>
+          <option value="2">2 种组合（双拼配色）</option>
+          <option value="3">3 种组合（三色方案）</option>
+          <option value="4">4 种组合（四色方案）</option>
+        </select>
+      </label>
+    </div>
+    <div id="gen-tex-chips" class="chips"></div>
+    <div class="gen-summary" id="gen-summary">尚未选择花色</div>
+    <div class="gen-buttons">
+      <button class="btn primary big" id="btn-generate">🚀 开始批量生成</button>
+      <button class="btn danger" id="btn-stop" hidden>停止</button>
+    </div>
+    <div class="progress" id="gen-progress" hidden>
+      <div class="progress-bar" id="gen-progress-bar"></div>
+      <span class="progress-text" id="gen-progress-text"></span>
+    </div>
+  </div>
+
+  <div class="watermark-toggle card">
+    <label class="check"><input type="checkbox" id="wm-enable" checked /> 下载时叠加水印（品牌 / 小红书号 / 花色标签）</label>
+  </div>
+
+  <div id="results"></div>
+</section>
+
+<!-- ⑤ 视频与成片 -->
+<section id="sec-video" class="panel">
+  <div class="panel-head">
+    <h2>质感视频与成片合成</h2>
+    <p>在第④步的图片上点「🎬 生视频」把图片加入这里，也可以直接上传图片。每条视频用上方运镜提示词生成，可单独修改。生成的片段可以再合成为带标题卡、花色标注的竖屏宣传成片（对齐验收样片风格）。</p>
+    <div class="head-actions">
+      <button class="btn small" id="btn-video-upload">＋ 上传图片生成视频</button>
+      <input type="file" id="video-upload-input" accept="image/*" multiple hidden />
+    </div>
+  </div>
+
+  <div id="video-tasks" class="video-list"></div>
+
+  <div class="card compose-card">
+    <h3>🎞 成片合成（标题卡 + 片段拼接 + 花色标注 + BGM）</h3>
+    <div class="form-row">
+      <label>主标题（支持换行）
+        <textarea id="compose-title" rows="2">板材花色
+应用效果展示</textarea>
+      </label>
+      <label>英文副标题
+        <input type="text" id="compose-sub" value="COLOR SCHEME" />
+      </label>
+    </div>
+    <div class="form-row">
+      <label>花色标注行（每行一条，如：漆感板-熔岩红 #F07）
+        <textarea id="compose-lines" rows="2" placeholder="漆感板-熔岩红 #F07&#10;印象派-归予 #S1020"></textarea>
+      </label>
+      <label>成片尺寸
+        <select id="compose-size">
+          <option value="1080x1920" selected>1080×1920 竖屏</option>
+          <option value="1080x1440">1080×1440（3:4）</option>
+          <option value="1920x1080">1920×1080 横屏</option>
+        </select>
+      </label>
+      <label>背景音乐（可选 mp3/m4a）
+        <div class="logo-upload">
+          <input type="file" id="compose-bgm-input" accept="audio/*" hidden />
+          <button class="btn small" id="btn-bgm-random" title="从 output/BGM 曲库随机选一首">🎲 随机曲库</button>
+          <button class="btn small ghost" id="btn-bgm-pick">自选文件</button>
+          <span id="bgm-name" class="hint"></span>
+          <button class="btn small ghost" id="btn-bgm-clear" hidden>清除</button>
+        </div>
+        <audio id="bgm-preview" controls preload="none" hidden style="margin-top:8px;width:100%;max-width:360px;height:32px"></audio>
+      </label>
+    </div>
+    <h4>选择要拼接的片段（按选择顺序拼接，标注文字取自花色信息）</h4>
+    <div id="compose-clips" class="clips-grid"><p class="hint">先在上方生成视频片段</p></div>
+    <div class="gen-buttons">
+      <button class="btn primary big" id="btn-compose">🎬 合成宣传成片</button>
+    </div>
+    <div class="progress" id="compose-progress" hidden><div class="progress-bar indeterminate"></div><span class="progress-text">正在合成，请稍候…</span></div>
+    <div id="compose-result"></div>
+  </div>
+</section>
+
+</main>
+
+<!-- 灯箱 -->
+<div id="lightbox" class="lightbox" hidden>
+  <div class="lightbox-body">
+    <img id="lightbox-img" />
+    <div class="lightbox-actions">
+      <button class="btn" id="lb-download">下载原图</button>
+      <button class="btn" id="lb-download-wm">下载带水印</button>
+      <button class="btn" id="lb-video">🎬 用这张图生成视频</button>
+      <button class="btn ghost" id="lb-regen">🔄 重新生成</button>
+      <button class="btn ghost" id="lb-close">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-wrap"></div>
+
+<script src="js/prompts.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/providers.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
